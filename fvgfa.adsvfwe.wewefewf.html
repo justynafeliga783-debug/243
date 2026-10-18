@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <title>Nova · Privacy</title>
+  <style>
+    /* ===== 全局重置 & CSS 变量 (风格 13: 抽象几何 / 高对比 / 清爽) ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      /* 主色调 — 抽象几何风格：鲜明但不刺眼，高对比 */
+      --bg: #f9f7f5;
+      --surface: #ffffff;
+      --surface-alt: #f1ede8;
+      --text-primary: #1a1a1a;
+      --text-secondary: #4d4d4d;
+      --text-tertiary: #737373;
+      --accent: #1e3f5c;
+      --accent-light: #2d5a7b;
+      --accent-soft: #d9e4ec;
+      --accent-glow: rgba(30, 63, 92, 0.12);
+      --border-light: #e6e2dd;
+      --border-medium: #d0ccc6;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.09);
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 28px;
+      --radius-xl: 36px;
+      --space-xs: 6px;
+      --space-sm: 12px;
+      --space-md: 20px;
+      --space-lg: 28px;
+      --space-xl: 40px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* 深色模式 — 高对比深色，保持几何感 */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #121212;
+        --surface: #1e1e1e;
+        --surface-alt: #2a2a2a;
+        --text-primary: #f0f0f0;
+        --text-secondary: #b8b8b8;
+        --text-tertiary: #8a8a8a;
+        --accent: #7ba7c4;
+        --accent-light: #9bbdd6;
+        --accent-soft: #2a3d4d;
+        --accent-glow: rgba(123, 167, 196, 0.18);
+        --border-light: #333333;
+        --border-medium: #444444;
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+        --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+        --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+      }
+    }
+
+    /* 基础排版 */
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      position: relative;
+      background: var(--bg);
+    }
+
+    /* 页面容器 */
+    .page {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-top: var(--safe-top);
+      padding-bottom: var(--safe-bottom);
+    }
+
+    .page.active {
+      display: flex;
+    }
+
+    /* ===== 加载页 (抽象几何动效) ===== */
+    #page-loading {
+      justify-content: center;
+      align-items: center;
+      background: var(--bg);
+      position: relative;
+      overflow: hidden;
+      padding: var(--space-lg);
+    }
+
+    /* 背景几何装饰 */
+    .loading-deco {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+
+    .loading-deco .geo {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid var(--accent-soft);
+      background: transparent;
+    }
+
+    .loading-deco .geo:nth-child(1) {
+      width: 280px;
+      height: 280px;
+      top: -80px;
+      right: -100px;
+      border-radius: 50%;
+      border-width: 3px;
+    }
+
+    .loading-deco .geo:nth-child(2) {
+      width: 200px;
+      height: 200px;
+      bottom: -60px;
+      left: -60px;
+      border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+      border-width: 2px;
+    }
+
+    .loading-deco .geo:nth-child(3) {
+      width: 120px;
+      height: 120px;
+      top: 40%;
+      right: 10%;
+      border-radius: 50%;
+      background: var(--accent-glow);
+      border: none;
+    }
+
+    .loading-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-xl);
+      z-index: 1;
+      position: relative;
+    }
+
+    /* 应用图标 — 内联 SVG */
+    .app-icon-wrapper {
+      width: 96px;
+      height: 96px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border-light);
+      transition: box-shadow 0.3s ease;
+      animation: iconFloat 2.4s ease-in-out infinite;
+    }
+
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .app-icon-wrapper svg {
+      width: 56px;
+      height: 56px;
+      display: block;
+    }
+
+    .loading-app-name {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--text-primary);
+      margin-top: -8px;
+    }
+
+    /* 加载动画 — 几何旋转环 */
+    .loader-ring {
+      width: 44px;
+      height: 44px;
+      position: relative;
+      margin-top: var(--space-sm);
+    }
+
+    .loader-ring .ring-seg {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      border-top-color: var(--accent);
+      animation: spin 1.1s cubic-bezier(0.6, 0.2, 0.4, 0.8) infinite;
+    }
+
+    .loader-ring .ring-seg:nth-child(2) {
+      border-top-color: transparent;
+      border-right-color: var(--accent-light);
+      animation-duration: 1.6s;
+      animation-direction: reverse;
+      inset: 6px;
+      border-width: 3px;
+    }
+
+    .loader-ring .ring-seg:nth-child(3) {
+      border-top-color: transparent;
+      border-bottom-color: var(--accent-soft);
+      animation-duration: 2.2s;
+      inset: 12px;
+      border-width: 2px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* ===== 隐私确认页面 ===== */
+    #page-privacy {
+      background: var(--bg);
+      padding: var(--space-md) var(--space-md) var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .privacy-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) 0 var(--space-xs);
+    }
+
+    .privacy-icon-small {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .privacy-icon-small svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .privacy-header-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .privacy-app-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.3px;
+    }
+
+    .privacy-app-meta {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      font-weight: 400;
+    }
+
+    .privacy-card {
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-light);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .privacy-card h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .privacy-card h2 .accent-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .privacy-card p {
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--text-secondary);
+    }
+
+    .privacy-card ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+      padding: 0;
+    }
+
+    .privacy-card ul li {
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .privacy-card ul li .bullet {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+      margin-top: 7px;
+      opacity: 0.7;
+    }
+
+    .privacy-card .highlight-box {
+      background: var(--accent-soft);
+      border-radius: var(--radius-sm);
+      padding: var(--space-md);
+      border-left: 4px solid var(--accent);
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .privacy-footer {
+      margin-top: auto;
+      padding-top: var(--space-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+      position: sticky;
+      bottom: 0;
+      background: linear-gradient(0deg, var(--bg) 70%, transparent 100%);
+      padding-bottom: calc(var(--space-md) + var(--safe-bottom));
+    }
+
+    .btn-agree {
+      width: 100%;
+      min-height: 56px;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--accent);
+      color: #ffffff;
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      box-shadow: var(--shadow-md);
+      transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .btn-agree:active {
+      transform: scale(0.97);
+      background: var(--accent-light);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-agree svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .privacy-note {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      text-align: center;
+      line-height: 1.5;
+      padding: 0 var(--space-sm);
+    }
+
+    /* ===== 主应用页 (简洁欢迎界面) ===== */
+    #page-main {
+      justify-content: center;
+      align-items: center;
+      padding: var(--space-xl) var(--space-lg);
+      background: var(--bg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .main-geo-deco {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.35;
+    }
+
+    .main-geo-deco .geo {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid var(--accent-soft);
+    }
+
+    .main-geo-deco .geo:nth-child(1) {
+      width: 220px;
+      height: 220px;
+      top: -60px;
+      left: -80px;
+      border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+    }
+
+    .main-geo-deco .geo:nth-child(2) {
+      width: 160px;
+      height: 160px;
+      bottom: -40px;
+      right: -50px;
+      border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    }
+
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-lg);
+      z-index: 1;
+      text-align: center;
+      max-width: 360px;
+    }
+
+    .main-icon-large {
+      width: 100px;
+      height: 100px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .main-icon-large svg {
+      width: 56px;
+      height: 56px;
+    }
+
+    .main-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.6px;
+      line-height: 1.2;
+    }
+
+    .main-subtitle {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      max-width: 280px;
+    }
+
+    .main-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--accent-soft);
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--accent);
+      margin-top: var(--space-xs);
+    }
+
+    .main-badge svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .main-footer-note {
+      position: absolute;
+      bottom: calc(var(--space-lg) + var(--safe-bottom));
+      font-size: 12px;
+      color: var(--text-tertiary);
+      text-align: center;
+      z-index: 1;
+      padding: 0 var(--space-md);
+    }
+
+    /* 小屏适配 */
+    @media (max-width: 380px) {
+      .privacy-card {
+        padding: var(--space-md);
+      }
+      .main-title {
+        font-size: 24px;
+      }
+      .loading-app-name {
+        font-size: 22px;
+      }
+      .app-icon-wrapper {
+        width: 80px;
+        height: 80px;
+      }
+      .app-icon-wrapper svg {
+        width: 46px;
+        height: 46px;
+      }
+    }
+
+    /* 减少动效偏好 */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      .app-icon-wrapper {
+        animation: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+
+    <!-- ===== 加载页 (Loading) ===== -->
+    <div id="page-loading" class="page active" role="status" aria-label="Loading application">
+      <div class="loading-deco" aria-hidden="true">
+        <div class="geo"></div>
+        <div class="geo"></div>
+        <div class="geo"></div>
+      </div>
+      <div class="loading-center">
+        <div class="app-icon-wrapper">
+          <!-- 内联 SVG 应用图标：抽象几何层叠感 -->
+          <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="6" y="6" width="44" height="44" rx="12" fill="var(--accent)" opacity="0.12"/>
+            <path d="M28 10L40 34H16L28 10Z" fill="var(--accent)" opacity="0.85"/>
+            <circle cx="28" cy="38" r="8" fill="var(--accent-light)" opacity="0.7"/>
+            <rect x="22" y="24" width="12" height="12" rx="3" fill="var(--accent)" opacity="0.5"/>
+          </svg>
+        </div>
+        <div class="loading-app-name">Nova</div>
+        <div class="loader-ring" aria-label="Loading indicator">
+          <div class="ring-seg"></div>
+          <div class="ring-seg"></div>
+          <div class="ring-seg"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 隐私确认页 (Privacy) ===== -->
+    <div id="page-privacy" class="page" role="main" aria-label="Privacy confirmation">
+      <div class="privacy-header">
+        <div class="privacy-icon-small" aria-hidden="true">
+          <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="6" y="6" width="44" height="44" rx="12" fill="var(--accent)" opacity="0.12"/>
+            <path d="M28 10L40 34H16L28 10Z" fill="var(--accent)" opacity="0.85"/>
+            <circle cx="28" cy="38" r="8" fill="var(--accent-light)" opacity="0.7"/>
+            <rect x="22" y="24" width="12" height="12" rx="3" fill="var(--accent)" opacity="0.5"/>
+          </svg>
+        </div>
+        <div class="privacy-header-text">
+          <span class="privacy-app-name">Nova</span>
+          <span class="privacy-app-meta">Version 1.0 · Privacy Notice</span>
+        </div>
+      </div>
+
+      <div class="privacy-card">
+        <h2><span class="accent-dot" aria-hidden="true"></span> Your Privacy Matters</h2>
+        <p>
+          Nova is designed with a privacy-first approach. This notice explains how the application
+          operates and what you can expect when using it. Please read it carefully before proceeding.
+        </p>
+
+        <div class="highlight-box" role="note">
+          Nova does not collect, store, transmit, or share any personal data. The application runs
+          entirely on your device and requires no network connection for its core functionality.
+        </div>
+
+        <h2><span class="accent-dot" aria-hidden="true"></span> What We Do Not Do</h2>
+        <ul>
+          <li><span class="bullet" aria-hidden="true"></span> We do not collect personal information such as your name, email address, phone number, or location.</li>
+          <li><span class="bullet" aria-hidden="true"></span> We do not access your contacts, photos, camera, microphone, or any other device sensors.</li>
+          <li><span class="bullet" aria-hidden="true"></span> We do not use analytics, tracking pixels, cookies, or any form of user behavior monitoring.</li>
+          <li><span class="bullet" aria-hidden="true"></span> We do not transmit any data to external servers or third parties.</li>
+          <li><span class="bullet" aria-hidden="true"></span> We do not require you to create an account or provide any credentials.</li>
+        </ul>
+
+        <h2><span class="accent-dot" aria-hidden="true"></span> Data Handling</h2>
+        <p>
+          Any preferences or settings you configure within Nova are stored locally on your device
+          only. They are never uploaded, synchronized, or shared. Uninstalling the application
+          removes all locally stored data permanently.
+        </p>
+
+        <h2><span class="accent-dot" aria-hidden="true"></span> Third-Party Services</h2>
+        <p>
+          Nova does not integrate any third-party SDKs, advertising networks, or analytics
+          platforms. No external code runs within the application beyond what is necessary for
+          its core functionality.
+        </p>
+
+        <h2><span class="accent-dot" aria-hidden="true"></span> Your Consent</h2>
+        <p>
+          By tapping "Agree &amp; Continue", you acknowledge that you have read and understood this
+          privacy notice and agree to use Nova under these terms. If you do not agree, you may
+          close the application.
+        </p>
+      </div>
+
+      <div class="privacy-footer">
+        <button class="btn-agree" id="btnAgree" aria-label="Agree and continue to application">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Agree &amp; Continue
+        </button>
+        <p class="privacy-note">
+          Contact: <span style="color:var(--accent); font-weight:500;">privacy@nova.app</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- ===== 主应用页 (Main) ===== -->
+    <div id="page-main" class="page" role="main" aria-label="Application main screen">
+      <div class="main-geo-deco" aria-hidden="true">
+        <div class="geo"></div>
+        <div class="geo"></div>
+      </div>
+      <div class="main-content">
+        <div class="main-icon-large">
+          <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="6" y="6" width="44" height="44" rx="12" fill="var(--accent)" opacity="0.12"/>
+            <path d="M28 10L40 34H16L28 10Z" fill="var(--accent)" opacity="0.85"/>
+            <circle cx="28" cy="38" r="8" fill="var(--accent-light)" opacity="0.7"/>
+            <rect x="22" y="24" width="12" height="12" rx="3" fill="var(--accent)" opacity="0.5"/>
+          </svg>
+        </div>
+        <h1 class="main-title">Welcome to Nova</h1>
+        <p class="main-subtitle">
+          A clean, private space designed for focus and clarity.
+          Everything stays on your device.
+        </p>
+        <div class="main-badge">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M12 2L3 7V12C3 17.55 6.84 22.74 12 24C17.16 22.74 21 17.55 21 12V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Privacy-first · No data collection
+        </div>
+      </div>
+      <p class="main-footer-note">Nova · Local-only experience</p>
+    </div>
+
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      // ===== 页面元素 =====
+      const pageLoading = document.getElementById('page-loading');
+      const pagePrivacy = document.getElementById('page-privacy');
+      const pageMain = document.getElementById('page-main');
+      const btnAgree = document.getElementById('btnAgree');
+
+      // ===== 页面切换工具 =====
+      function showPage(pageId) {
+        // 隐藏所有页面
+        [pageLoading, pagePrivacy, pageMain].forEach(function(p) {
+          p.classList.remove('active');
+        });
+        // 显示目标页面
+        const target = document.getElementById(pageId);
+        if (target) {
+          target.classList.add('active');
+        }
+      }
+
+      // ===== 模拟加载 3 秒后进入隐私页 =====
+      const LOADING_DURATION = 3000; // 3 秒
+
+      window.addEventListener('load', function() {
+        // 确保初始状态正确
+        showPage('page-loading');
+
+        // 3 秒后自动跳转到隐私页
+        setTimeout(function() {
+          // 如果用户已经手动触发了（极端情况），仍保证只切换一次
+          if (pageLoading.classList.contains('active')) {
+            showPage('page-privacy');
+          }
+        }, LOADING_DURATION);
+      });
+
+      // ===== 隐私页按钮：调用原生方法并进入主应用 =====
+      btnAgree.addEventListener('click', function() {
+        // 调用原生 App 提供的方法（若存在）
+        if (window.NativeApp && typeof window.NativeApp.agree === 'function') {
+          try {
+            window.NativeApp.agree();
+          } catch (e) {
+            // 原生方法调用异常时静默处理，不影响页面流转
+            console.warn('NativeApp.agree() call failed:', e);
+          }
+        }
+
+        // 无论原生方法是否可用，都进入主应用页（Webview 内体验闭环）
+        showPage('page-main');
+      });
+
+      // ===== 防止双击缩放（增强 Webview 体验）=====
+      document.addEventListener('dblclick', function(e) {
+        e.preventDefault();
+      }, { passive: false });
+
+      // ===== 处理 Android 返回键 / 手势返回（仅作提示，不强制拦截）=====
+      // 保持简洁，不额外添加历史记录逻辑
+
+    })();
+  </script>
+</body>
+</html>
