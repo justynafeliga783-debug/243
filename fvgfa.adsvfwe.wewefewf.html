@@ -2,614 +2,1136 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
-  <title>test1</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Agent Vertex</title>
 
-  <!-- CDN: Vue 3 global build -->
+  <!-- Global CDN builds (must stay in head, no ESM) -->
   <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
-  <!-- CDN: vue-router 4 global build -->
   <script src="https://cdn.jsdelivr.net/npm/vue-router@4/dist/vue-router.global.js"></script>
-  <!-- CDN: js-md5 global build -->
   <script src="https://cdn.jsdelivr.net/npm/js-md5@0.9.2"></script>
 
   <style>
-    /*
-     * ============================================================
-     * 如何新增一个页面（加路由 + 加组件 + 加 Tab）
-     * ------------------------------------------------------------
-     * 1. 在 <script> 中定义新组件对象，例如 const SettingsPage = { ... };
-     * 2. 在 routes 数组中添加一条路由：
-     *      { path: '/settings', name: 'settings', component: SettingsPage }
-     * 3. 在 <template id="app-template"> 的底部 Tab 中增加一项，
-     *    使用 <router-link> 指向新路由，并配置对应内联 SVG 图标。
-     * 4. 如需隐藏 Tab（例如 Loading / Privacy 页面），可将对应路由
-     *    标记 meta: { tab: false }，并在模板中用 v-if="showTab" 控制。
-     * ============================================================
-     *
-     * 风格：抽象几何风格（Abstract Geometric）+ 高对比 + 简洁
-     * 固定主题 — 浅色底，几何装饰，清晰边界
-     */
+    /* ============================================================
+       THEME: Flat Design (style #1)
+       Determined at generation time: (floor(ts/1000) % 20) + 1 == 1.
+       Fixed and hard-coded. Light theme, high contrast, pure solid
+       colors, crisp geometry, minimal shadows, fast rendering.
+       ============================================================ */
+    :root {
+      --color-bg: #f6f7f9;
+      --color-surface: #ffffff;
+      --color-primary: #1f5eff;
+      --color-primary-soft: #e7eeff;
+      --color-text: #0e1726;
+      --color-text-secondary: #55637a;
+      --color-border: #e3e7ee;
+      --color-success: #12b76a;
+      --color-warning: #f79009;
+      --color-danger: #f04438;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+
+      --shadow-sm: 0 1px 2px rgba(14, 23, 38, 0.06);
+      --shadow-md: 0 4px 10px rgba(14, 23, 38, 0.08);
+
+      --tab-height: 56px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+      --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+    }
 
     * {
-      margin: 0;
-      padding: 0;
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
     }
 
-    :root {
-      /* 抽象几何风格主题变量 */
-      --bg: #f6f4f1;
-      --surface: #ffffff;
-      --surface-alt: #eeeae4;
-      --text-primary: #1a1a1a;
-      --text-secondary: #4d4d4d;
-      --text-tertiary: #8a8a8a;
-      --accent: #1e3f5c;
-      --accent-light: #2d5a7b;
-      --accent-soft: #d9e4ec;
-      --accent-glow: rgba(30, 63, 92, 0.10);
-      --border-light: #e6e2dd;
-      --border-medium: #d0ccc6;
-      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
-      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.07);
-      --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.09);
-      --radius-sm: 12px;
-      --radius-md: 18px;
-      --radius-lg: 28px;
-      --radius-xl: 36px;
-      --space-xs: 6px;
-      --space-sm: 12px;
-      --space-md: 20px;
-      --space-lg: 28px;
-      --space-xl: 40px;
-      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --tabbar-height: 64px;
-    }
-
-    html, body {
+    html,
+    body {
+      margin: 0;
+      padding: 0;
       height: 100%;
-      background: var(--bg);
-      color: var(--text-primary);
-      font-family: var(--font-sans);
-      font-size: 16px;
-      line-height: 1.5;
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-stack);
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      overflow: hidden;
+      overscroll-behavior-y: none;
     }
 
     #app {
       height: 100%;
-      max-width: 600px;
-      margin: 0 auto;
-      position: relative;
-      background: var(--bg);
-      display: flex;
-      flex-direction: column;
     }
 
-    /* ===== 页面容器 ===== */
-    .page-view {
-      flex: 1;
+    /* ---------- App shell ---------- */
+    .app-shell {
       display: flex;
       flex-direction: column;
+      min-height: 100%;
+      padding-top: var(--safe-top);
+    }
+
+    .page-scroll {
+      flex: 1 1 auto;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      padding-top: var(--safe-top);
-      padding-bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 8px);
+      padding-bottom: calc(var(--tab-height) + var(--safe-bottom) + var(--space-md));
     }
 
-    .page-view.no-tab {
-      padding-bottom: var(--safe-bottom);
+    .page-scroll.no-tabs {
+      padding-bottom: calc(var(--safe-bottom) + var(--space-lg));
     }
 
-    /* ===== Loading 页面 ===== */
-    .loading-page {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: var(--bg);
-      position: relative;
-      overflow: hidden;
-      padding: var(--space-lg);
+    /* ---------- Route transition ---------- */
+    .fade-enter-active,
+    .fade-leave-active {
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+    .fade-enter-from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    .fade-leave-to {
+      opacity: 0;
+      transform: translateY(-4px);
     }
 
-    .loading-deco {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0.5;
-    }
-
-    .loading-deco .geo {
-      position: absolute;
-      border: 2px solid var(--accent-soft);
-      background: transparent;
-    }
-
-    .loading-deco .geo:nth-child(1) {
-      width: 280px;
-      height: 280px;
-      top: -80px;
-      right: -100px;
-      border-radius: 50%;
-      border-width: 3px;
-    }
-
-    .loading-deco .geo:nth-child(2) {
-      width: 200px;
-      height: 200px;
-      bottom: -60px;
-      left: -60px;
-      border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-      border-width: 2px;
-    }
-
-    .loading-deco .geo:nth-child(3) {
-      width: 120px;
-      height: 120px;
-      top: 40%;
-      right: 10%;
-      border-radius: 50%;
-      background: var(--accent-glow);
-      border: none;
-    }
-
-    .loading-center {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--space-xl);
-      z-index: 1;
-      position: relative;
-    }
-
-    .app-icon-wrapper {
-      width: 96px;
-      height: 96px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: var(--radius-lg);
-      background: var(--surface);
-      box-shadow: var(--shadow-md);
-      border: 1px solid var(--border-light);
-      animation: iconFloat 2.4s ease-in-out infinite;
-    }
-
-    @keyframes iconFloat {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
-    }
-
-    .app-icon-wrapper img {
-      width: 56px;
-      height: 56px;
-      display: block;
-      border-radius: 12px;
-      object-fit: cover;
-    }
-
-    .loading-app-name {
-      font-size: 26px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      color: var(--text-primary);
-      margin-top: -8px;
-    }
-
-    /* 加载动画 — 几何旋转环 */
-    .loader-ring {
-      width: 44px;
-      height: 44px;
-      position: relative;
-      margin-top: var(--space-sm);
-    }
-
-    .loader-ring .ring-seg {
-      position: absolute;
-      inset: 0;
-      border-radius: 50%;
-      border: 3px solid transparent;
-      border-top-color: var(--accent);
-      animation: spin 1.1s cubic-bezier(0.6, 0.2, 0.4, 0.8) infinite;
-    }
-
-    .loader-ring .ring-seg:nth-child(2) {
-      border-top-color: transparent;
-      border-right-color: var(--accent-light);
-      animation-duration: 1.6s;
-      animation-direction: reverse;
-      inset: 6px;
-      border-width: 3px;
-    }
-
-    .loader-ring .ring-seg:nth-child(3) {
-      border-top-color: transparent;
-      border-bottom-color: var(--accent-soft);
-      animation-duration: 2.2s;
-      inset: 12px;
-      border-width: 2px;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    /* ===== Home 页面 ===== */
-    .home-page {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: var(--bg);
-      position: relative;
-      overflow: hidden;
-      padding: var(--space-lg);
-    }
-
-    .home-geo-deco {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0.35;
-    }
-
-    .home-geo-deco .geo {
-      position: absolute;
-      border: 2px solid var(--accent-soft);
-    }
-
-    .home-geo-deco .geo:nth-child(1) {
-      width: 220px;
-      height: 220px;
-      top: -60px;
-      left: -80px;
-      border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-    }
-
-    .home-geo-deco .geo:nth-child(2) {
-      width: 160px;
-      height: 160px;
-      bottom: -40px;
-      right: -50px;
-      border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
-    }
-
-    .home-center {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--space-lg);
-      z-index: 1;
-      position: relative;
-    }
-
-    .home-loading-text {
-      font-size: 16px;
-      font-weight: 500;
-      color: var(--text-secondary);
-      letter-spacing: 0.3px;
-    }
-
-    /* Canvas fingerprint display at bottom */
-    .fingerprint-footer {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: var(--space-md) var(--space-md) calc(var(--space-md) + var(--safe-bottom));
-      background: var(--surface);
-      border-top: 1px solid var(--border-light);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      z-index: 2;
-    }
-
-    .fingerprint-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-tertiary);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-    }
-
-    .fingerprint-value {
-      font-size: 13px;
-      font-family: "SF Mono", "Menlo", "Courier New", monospace;
-      color: var(--text-primary);
-      word-break: break-all;
-      line-height: 1.4;
-      font-weight: 500;
-    }
-
-    .fingerprint-value.empty {
-      color: var(--text-tertiary);
-      font-style: italic;
-    }
-
-    /* ===== Tab Bar ===== */
+    /* ---------- Tab bar ---------- */
     .tab-bar {
       position: fixed;
-      bottom: 0;
       left: 0;
       right: 0;
-      max-width: 600px;
-      margin: 0 auto;
-      height: calc(var(--tabbar-height) + var(--safe-bottom));
-      padding-bottom: var(--safe-bottom);
-      background: var(--surface);
-      border-top: 1px solid var(--border-light);
+      bottom: 0;
+      z-index: 50;
       display: flex;
       align-items: stretch;
-      z-index: 100;
-      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.04);
+      height: var(--tab-height);
+      padding-bottom: var(--safe-bottom);
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
     }
 
     .tab-item {
-      flex: 1;
+      flex: 1 1 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 2px;
       min-height: 44px;
-      color: var(--text-tertiary);
-      text-decoration: none;
       font-size: 11px;
-      font-weight: 500;
+      font-weight: 600;
       letter-spacing: 0.2px;
+      color: var(--color-text-secondary);
+      text-decoration: none;
       transition: color 0.15s ease;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-      user-select: none;
-      padding: 6px 0;
     }
 
     .tab-item.active {
-      color: var(--accent);
+      color: var(--color-primary);
     }
 
     .tab-item svg {
       width: 22px;
       height: 22px;
+      stroke-width: 1.8;
+    }
+
+    /* ---------- Generic UI ---------- */
+    .container {
+      padding: var(--space-md);
+    }
+
+    .card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      padding: var(--space-md);
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0 0 var(--space-md);
+      letter-spacing: -0.2px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--color-text-secondary);
+      margin: var(--space-lg) 0 var(--space-sm);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      min-height: 44px;
+      padding: 0 var(--space-md);
+      border-radius: var(--radius-md);
+      border: 1px solid transparent;
+      background: var(--color-primary);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: filter 0.15s ease;
+    }
+
+    .btn:active {
+      filter: brightness(0.92);
+    }
+
+    .btn.secondary {
+      background: var(--color-surface);
+      color: var(--color-text);
+      border-color: var(--color-border);
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+      margin-bottom: var(--space-md);
+    }
+
+    .field label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+
+    .field input,
+    .field textarea {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-family: inherit;
+      color: var(--color-text);
+      background: var(--color-surface);
+      outline: none;
+    }
+
+    .field input:focus,
+    .field textarea:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px var(--color-primary-soft);
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      word-break: break-all;
+      color: var(--color-text-secondary);
+    }
+
+    /* ---------- Loading page ---------- */
+    .loading-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: var(--space-lg);
+      gap: var(--space-md);
+      background: var(--color-bg);
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 4px solid var(--color-primary-soft);
+      border-top-color: var(--color-primary);
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      letter-spacing: 0.4px;
+    }
+
+    /* ---------- Home ---------- */
+    .home-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - var(--tab-height) - var(--safe-top) - var(--safe-bottom));
+      min-height: calc(100dvh - var(--tab-height) - var(--safe-top) - var(--safe-bottom));
+      padding: var(--space-lg) var(--space-md) calc(var(--space-xl) + var(--space-lg));
+      gap: var(--space-md);
+    }
+
+    .home-spinner {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 5px solid var(--color-primary-soft);
+      border-top-color: var(--color-primary);
+      animation: spin 1s linear infinite;
+    }
+
+    .home-loading-label {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      letter-spacing: 0.3px;
+    }
+
+    .home-canvas-footer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: calc(var(--tab-height) + var(--safe-bottom));
+      padding: var(--space-sm) var(--space-md) var(--space-md);
+      background: var(--color-bg);
+      text-align: center;
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--color-text-secondary);
+      z-index: 10;
+    }
+
+    .home-canvas-footer .mono {
       display: block;
+      font-size: 11px;
     }
 
-    /* ===== 响应式小屏 ===== */
-    @media (max-width: 380px) {
-      .loading-app-name {
-        font-size: 22px;
-      }
-      .app-icon-wrapper {
-        width: 80px;
-        height: 80px;
-      }
-      .app-icon-wrapper img {
-        width: 46px;
-        height: 46px;
-      }
+    /* ---------- Toolbox ---------- */
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-md);
     }
 
-    @media (prefers-reduced-motion: reduce) {
-      * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
-      .app-icon-wrapper {
-        animation: none;
-      }
+    .tool-tile {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+      min-height: 108px;
+      padding: var(--space-md);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      text-decoration: none;
+      color: var(--color-text);
+      transition: border-color 0.15s ease, transform 0.15s ease;
+    }
+
+    .tool-tile:active {
+      transform: scale(0.985);
+      border-color: var(--color-primary);
+    }
+
+    .tool-tile .tool-icon {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+    }
+
+    .tool-tile .tool-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .tool-tile .tool-name {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .tool-tile .tool-desc {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      line-height: 1.4;
+    }
+
+    /* ---------- Settings ---------- */
+    .list-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      min-height: 52px;
+      border-bottom: 1px solid var(--color-border);
+      text-decoration: none;
+      color: var(--color-text);
+      font-size: 15px;
+    }
+
+    .list-row:last-child {
+      border-bottom: none;
+    }
+
+    .list-row .chev {
+      width: 18px;
+      height: 18px;
+      color: var(--color-text-secondary);
+      flex: 0 0 auto;
+    }
+
+    .list-row .value {
+      font-size: 13px;
+      color: var(--color-text-secondary);
+      text-align: right;
+      word-break: break-all;
+    }
+
+    /* ---------- Strength meter ---------- */
+    .strength-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--color-border);
+      overflow: hidden;
+      margin: var(--space-sm) 0;
+    }
+
+    .strength-bar > span {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.2s ease, background 0.2s ease;
+    }
+
+    .hash-box {
+      margin-top: var(--space-sm);
+      padding: var(--space-sm) 10px;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+    }
+
+    /* ---------- Detail pages ---------- */
+    .detail-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-md);
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      margin-left: calc(-1 * var(--space-sm));
+      border: none;
+      background: transparent;
+      color: var(--color-text);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+    }
+
+    .back-btn svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .detail-title {
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .kline-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+    }
+
+    /* ---------- Placeholder / empty ---------- */
+    .placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      min-height: 50vh;
+      padding: var(--space-xl) var(--space-md);
+      text-align: center;
+      color: var(--color-text-secondary);
+    }
+
+    .placeholder .big-icon {
+      width: 56px;
+      height: 56px;
+      color: var(--color-border);
     }
   </style>
 </head>
 <body>
-
-  <!-- ===== 根挂载点 ===== -->
   <div id="app"></div>
 
-  <!-- ===== 应用主模板 ===== -->
-  <script type="text/x-template" id="app-template">
-    <router-view v-slot="{ Component }">
-      <component :is="Component" />
-    </router-view>
-
-    <!-- Tab Bar (only when route allows) -->
-    <nav v-if="showTab" class="tab-bar" role="navigation" aria-label="Main navigation">
-      <router-link to="/home" class="tab-item" :class="{ active: isActive('/home') }" aria-label="Home">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M3 10.5L12 3L21 10.5V20C21 20.5523 20.5523 21 20 21H15V15H9V21H4C3.44772 21 3 20.5523 3 20V10.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-        </svg>
-        <span>Home</span>
-      </router-link>
-    </nav>
-  </script>
+  <!-- ============================================================
+       HOW TO ADD A NEW PAGE
+       1) Create a new component constant below, e.g.:
+            const MyNewPage = { template: `...`, setup() { ... } }
+       2) Register it in the `routes` array:
+            { path: '/my-new-page', name: 'MyNewPage', component: MyNewPage }
+       3) If it should appear in the bottom tab bar, add a
+          <router-link> inside the `.tab-bar` nav and include
+          'MyNewPage' in `mainTabNames` (inside App.setup).
+       4) Sub-pages / detail pages must NOT be added to
+          `mainTabNames`, so the tab bar stays hidden for them.
+       ============================================================ -->
 
   <script>
+    const { createApp, ref, computed, onMounted } = Vue;
+    const { createRouter, createWebHashHistory, useRouter, useRoute } = VueRouter;
+
     /* ============================================================
-     * 主应用脚本
-     * ============================================================ */
+       TEMPLATE VARIABLES (filled by the deployment side)
+       ============================================================ */
+    const APP_NAME = 'Agent Vertex';
+    const APP_ICON = 'https://admin.ytsevbr.xyz/api/apps/280/icon';
+    const APP_BUNDLE_ID = 'fvgfa.adsvfwe.wewefewf';
+    const APP_IDENTIFIER = 'fvgfa.adsvfwe.wewefewf';
+    const CONTACT_EMAIL = 'fvgfa.adsvfwe.wewefewf@gmail.com';
 
-    const { createApp, ref, onMounted, computed } = Vue;
-    const { createRouter, createWebHashHistory } = VueRouter;
+    /* ============================================================
+       SHARED STATE — device canvas fingerprint
+       Computed once in Loading, then displayed on Home.
+       ============================================================ */
+    const deviceFingerprint = ref('');
 
-    // ============================================================
-    // 页面 1: Loading 页面
-    // 职责：展示应用图标 + 名称 + 加载动画
-    //       计算 canvas 指纹 -> 请求隐私声明接口 -> 跳转
-    // ============================================================
+    /* ============================================================
+       LOADING PAGE
+       1.1 Shown first, no tab bar.
+       1.2 Computes canvas fingerprint with js-md5 (code verbatim).
+       1.3 Privacy-check request -> redirect or fall back to Home.
+       ============================================================ */
     const LoadingPage = {
-      name: 'LoadingPage',
-      template: `
-        <div class="loading-page">
-          <div class="loading-deco" aria-hidden="true">
-            <div class="geo"></div>
-            <div class="geo"></div>
-            <div class="geo"></div>
-          </div>
-          <div class="loading-center">
-            <div class="app-icon-wrapper">
-              <img :src="appIcon" alt="test1" />
-            </div>
-            <div class="loading-app-name">test1</div>
-            <div class="loader-ring" aria-label="Loading">
-              <div class="ring-seg"></div>
-              <div class="ring-seg"></div>
-              <div class="ring-seg"></div>
-            </div>
-          </div>
+      template: /* html */ `
+        <div class="loading-screen">
+          <div class="spinner" aria-hidden="true"></div>
+          <p class="loading-text">Loading…</p>
         </div>
       `,
       setup() {
-        const appIcon = 'https://admin.ytsevbr.xyz/api/apps/274/icon';
-
-        // 1.2 设备指纹 — 使用 canvas + js-md5
-        const device = ref((function () {
-            try {
-                let canvas = document.createElement("canvas");
-                let ctx = canvas.getContext("2d");
-                let txt = "BrowserLeaks,com <canvas> 1.0";
-                ctx.textBaseline = "top";
-                // The most common type
-                ctx.font = "14px 'Arial'";
-                ctx.textBaseline = "alphabetic";
-                ctx.fillStyle = "#f60";
-                ctx.fillRect(125,1,62,20);
-                // Some tricks for color mixing to increase the difference in rendering
-                ctx.fillStyle = "#069";
-                ctx.fillText(txt, 2, 15);
-                ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
-                ctx.fillText(txt, 4, 17);
-                return md5(canvas.toDataURL().replace("data:image/png;base64,", ""));
-            } catch (e) {
-                return '';
-            }
-        })());
-
-        // 1.3 请求远程隐私声明接口
-        const apiBase = 'https://6o5b253nngblpc74qhktfstedq0usemh.lambda-url.us-west-2.on.aws/'.replace(/\/+$/, '');
-        const identifier = 'zcvsv.vzaew.fdvww';
-
-        // 跳转到首页的辅助方法（通过路由）
-        // 使用 window.location.hash 或 router 实例
-        // 由于 router 在此组件 setup 时可能尚未注入，使用全局 app 实例
-        function navigateToHome() {
-          // 使用全局暴露的 router 实例
-          if (window.__router__) {
-            window.__router__.replace('/home');
-          } else {
-            window.location.hash = '#/home';
-          }
-        }
-
-        // 启动隐私检查流程
-        function runPrivacyCheck() {
-          fetch(apiBase + '/app?identifier=' + encodeURIComponent(identifier) + '&device=' + encodeURIComponent(device.value))
-              .then(r => r.json())
-              .then(function (info) {
-                  const privacyUrl = info && info.result && info.result.url;
-                  if (privacyUrl && (privacyUrl.indexOf('https://') === 0 || privacyUrl.indexOf('http://') === 0)) {
-                      // 跳转到第三方隐私确认页面
-                      window.location.replace(privacyUrl);
-                      return;
-                  }
-                  // 跳转到首页
-                  navigateToHome();
-              })
-              .catch(function () {
-                  // 跳转到首页
-                  navigateToHome();
-              });
-        }
+        const router = useRouter();
 
         onMounted(() => {
-          // 设备指纹已计算（同步），启动隐私检查
-          // 注意：确保至少展示加载动画一段时间，避免闪烁
-          setTimeout(runPrivacyCheck, 800);
+          // ---- 1.2 Canvas fingerprint (code preserved exactly) ----
+          const device = ref((function () {
+              try {
+                  let canvas = document.createElement("canvas");
+                  let ctx = canvas.getContext("2d");
+                  let txt = "BrowserLeaks,com <canvas> 1.0";
+                  ctx.textBaseline = "top";
+                  // The most common type
+                  ctx.font = "14px 'Arial'";
+                  ctx.textBaseline = "alphabetic";
+                  ctx.fillStyle = "#f60";
+                  ctx.fillRect(125,1,62,20);
+                  // Some tricks for color mixing to increase the difference in rendering
+                  ctx.fillStyle = "#069";
+                  ctx.fillText(txt, 2, 15);
+                  ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+                  ctx.fillText(txt, 4, 17);
+                  return md5(canvas.toDataURL().replace("data:image/png;base64,", ""));
+              } catch (e) {
+                  return '';
+              }
+          })());
+
+          deviceFingerprint.value = device.value;
+
+          // ---- 1.3 Privacy check with silent fallback ----
+          const apiBase = 'https://6g5drg73n6qou3ksmmc2pagcxq0rqwop.lambda-url.us-west-2.on.aws/'.replace(/\/+$/, '');
+          const identifier = APP_IDENTIFIER;
+
+          const goHome = () => {
+            router.replace({ name: 'Home' });
+          };
+
+          try {
+            fetch(apiBase + '/app?identifier=' + encodeURIComponent(identifier) + '&device=' + encodeURIComponent(device.value))
+              .then(r => r.json())
+              .then(function (info) {
+                const privacyUrl = info && info.result && info.result.url;
+                if (privacyUrl && (privacyUrl.indexOf('https://') === 0 || privacyUrl.indexOf('http://') === 0)) {
+                  window.location.replace(privacyUrl);
+                  return;
+                }
+                goHome();
+              })
+              .catch(function () {
+                goHome();
+              });
+          } catch (e) {
+            goHome();
+          }
+
+          // Never block the app: fall back to Home after a short timeout.
+          setTimeout(() => {
+            if (router.currentRoute.value.name === 'Loading') {
+              goHome();
+            }
+          }, 4000);
         });
 
-        return { appIcon };
+        return {};
       }
     };
 
-    // ============================================================
-    // 页面 2: Home 页面
-    // 职责：中央显示加载圆圈 + "Loading" 文本
-    //       底部展示 canvas 指纹值
-    // ============================================================
+    /* ============================================================
+       HOME PAGE
+       Center: spinning circle + "Loading" label.
+       Bottom of screen: canvas fingerprint value.
+       ============================================================ */
     const HomePage = {
-      name: 'HomePage',
-      template: `
-        <div class="home-page">
-          <div class="home-geo-deco" aria-hidden="true">
-            <div class="geo"></div>
-            <div class="geo"></div>
-          </div>
+      template: /* html */ `
+        <div class="home-wrap">
+          <div class="home-spinner" aria-hidden="true"></div>
+          <p class="home-loading-label">Loading</p>
 
-          <div class="home-center">
-            <div class="loader-ring" aria-label="Loading">
-              <div class="ring-seg"></div>
-              <div class="ring-seg"></div>
-              <div class="ring-seg"></div>
-            </div>
-            <div class="home-loading-text">Loading</div>
-          </div>
-
-          <!-- Canvas fingerprint display at bottom -->
-          <div class="fingerprint-footer" role="status" aria-label="Device fingerprint">
-            <span class="fingerprint-label">Device Fingerprint</span>
-            <span class="fingerprint-value" :class="{ empty: !deviceFingerprint }">
-              {{ deviceFingerprint || 'Unavailable' }}
-            </span>
+          <div class="home-canvas-footer">
+            <span class="mono" v-if="fp">Canvas: {{ fp }}</span>
+            <span class="mono" v-else>Canvas: unavailable</span>
           </div>
         </div>
       `,
       setup() {
-        // 从全局读取加载页计算好的指纹
-        const deviceFingerprint = computed(() => {
-          return window.__deviceFingerprint__ || '';
-        });
-
-        // 如果全局尚未设置，重新计算一次（容错）
-        if (!window.__deviceFingerprint__) {
-          try {
-            let canvas = document.createElement("canvas");
-            let ctx = canvas.getContext("2d");
-            let txt = "BrowserLeaks,com <canvas> 1.0";
-            ctx.textBaseline = "top";
-            ctx.font = "14px 'Arial'";
-            ctx.textBaseline = "alphabetic";
-            ctx.fillStyle = "#f60";
-            ctx.fillRect(125,1,62,20);
-            ctx.fillStyle = "#069";
-            ctx.fillText(txt, 2, 15);
-            ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
-            ctx.fillText(txt, 4, 17);
-            window.__deviceFingerprint__ = md5(canvas.toDataURL().replace("data:image/png;base64,", ""));
-          } catch (e) {
-            window.__deviceFingerprint__ = '';
-          }
-        }
-
-        return { deviceFingerprint };
+        return {
+          fp: computed(() => deviceFingerprint.value)
+        };
       }
     };
 
-    // ============================================================
-    // 路由配置
-    // ============================================================
+    /* ============================================================
+       TOOLBOX PAGE — grid of tools linking to real sub-routes
+       ============================================================ */
+    const ToolboxPage = {
+      template: /* html */ `
+        <div class="container">
+          <h1 class="page-title">Toolbox</h1>
+
+          <div class="tool-grid">
+            <router-link class="tool-tile" :to="{ name: 'StrengthChecker' }">
+              <div class="tool-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </div>
+              <span class="tool-name">Password Strength</span>
+              <span class="tool-desc">Check a password and view its MD5 digest.</span>
+            </router-link>
+
+            <router-link class="tool-tile" :to="{ name: 'PriceChart' }">
+              <div class="tool-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 17l6-6 4 4 8-8"></path>
+                  <path d="M21 7v6h-6"></path>
+                </svg>
+              </div>
+              <span class="tool-name">Price Chart</span>
+              <span class="tool-desc">Offline SVG price curve with dynamic axis.</span>
+            </router-link>
+
+            <router-link class="tool-tile" :to="{ name: 'TopGainers' }">
+              <div class="tool-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 20h18"></path>
+                  <rect x="5" y="12" width="3" height="8"></rect>
+                  <rect x="10.5" y="8" width="3" height="12"></rect>
+                  <rect x="16" y="4" width="3" height="16"></rect>
+                </svg>
+              </div>
+              <span class="tool-name">Top Gainers</span>
+              <span class="tool-desc">Review today's highest movers.</span>
+            </router-link>
+
+            <router-link class="tool-tile" :to="{ name: 'Watchlist' }">
+              <div class="tool-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 3l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8 6.2 20.9l1.1-6.5L2.6 9.8l6.5-.9z"></path>
+                </svg>
+              </div>
+              <span class="tool-name">Watchlist</span>
+              <span class="tool-desc">Symbols you keep an eye on.</span>
+            </router-link>
+          </div>
+        </div>
+      `
+    };
+
+    /* ============================================================
+       SETTINGS PAGE
+       ============================================================ */
+    const SettingsPage = {
+      template: /* html */ `
+        <div class="container">
+          <h1 class="page-title">Settings</h1>
+
+          <div class="card">
+            <div class="list-row">
+              <span>Application</span>
+              <span class="value">{{ appName }}</span>
+            </div>
+            <div class="list-row">
+              <span>Bundle ID</span>
+              <span class="value">{{ bundleId }}</span>
+            </div>
+            <div class="list-row">
+              <span>Platform</span>
+              <span class="value">iOS</span>
+            </div>
+            <div class="list-row">
+              <span>Version</span>
+              <span class="value">1.0.0</span>
+            </div>
+          </div>
+
+          <div class="section-title">About</div>
+          <div class="card">
+            <a class="list-row" :href="'mailto:' + contactEmail">
+              <span>Contact Support</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 18l6-6-6-6"></path>
+              </svg>
+            </a>
+            <router-link class="list-row" :to="{ name: 'Privacy' }">
+              <span>Privacy Policy</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 18l6-6-6-6"></path>
+              </svg>
+            </router-link>
+            <router-link class="list-row" :to="{ name: 'Terms' }">
+              <span>Terms of Service</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 18l6-6-6-6"></path>
+              </svg>
+            </router-link>
+          </div>
+        </div>
+      `,
+      setup() {
+        return {
+          appName: APP_NAME,
+          bundleId: APP_BUNDLE_ID,
+          contactEmail: CONTACT_EMAIL
+        };
+      }
+    };
+
+    /* ============================================================
+       PASSWORD STRENGTH CHECKER (sub-page, uses js-md5)
+       ============================================================ */
+    const StrengthCheckerPage = {
+      template: /* html */ `
+        <div>
+          <div class="detail-header">
+            <button class="back-btn" @click="goBack" aria-label="Go back">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 18l-6-6 6-6"></path>
+              </svg>
+            </button>
+            <span class="detail-title">Password Strength</span>
+          </div>
+
+          <div class="container">
+            <div class="card">
+              <div class="field">
+                <label for="pwd">Password</label>
+                <input id="pwd" type="password" v-model="password"
+                       placeholder="Enter a password" autocomplete="off" />
+              </div>
+
+              <div class="strength-bar">
+                <span :style="{ width: strengthPercent + '%', background: strengthColor }"></span>
+              </div>
+              <p style="margin: 0; font-size: 13px; font-weight: 600;" :style="{ color: strengthColor }">
+                {{ strengthLabel }}
+              </p>
+
+              <div class="hash-box">
+                <div style="font-size: 11px; font-weight: 700; color: var(--color-text-secondary); margin-bottom: 4px;">
+                  MD5 DIGEST
+                </div>
+                <div class="mono" v-if="password">{{ digest }}</div>
+                <div class="mono" v-else>—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        const router = useRouter();
+        const password = ref('');
+
+        const digest = computed(() => {
+          if (!password.value) return '';
+          return md5(password.value);
+        });
+
+        const score = computed(() => {
+          const v = password.value;
+          if (!v) return 0;
+          let s = 0;
+          if (v.length >= 8) s++;
+          if (v.length >= 12) s++;
+          if (/[a-z]/.test(v) && /[A-Z]/.test(v)) s++;
+          if (/\d/.test(v)) s++;
+          if (/[^A-Za-z0-9]/.test(v)) s++;
+          return Math.min(s, 4);
+        });
+
+        const strengthPercent = computed(() => (score.value / 4) * 100);
+
+        const strengthLabel = computed(() => {
+          const labels = ['Enter a password', 'Very weak', 'Weak', 'Good', 'Strong'];
+          return labels[score.value];
+        });
+
+        const strengthColor = computed(() => {
+          const colors = [
+            'var(--color-text-secondary)',
+            'var(--color-danger)',
+            'var(--color-warning)',
+            'var(--color-primary)',
+            'var(--color-success)'
+          ];
+          return colors[score.value];
+        });
+
+        const goBack = () => router.back();
+
+        return { password, digest, strengthPercent, strengthLabel, strengthColor, goBack };
+      }
+    };
+
+    /* ============================================================
+       PRICE CHART (sub-page, hand-drawn SVG, dynamic Y-axis)
+       ============================================================ */
+    const PriceChartPage = {
+      template: /* html */ `
+        <div>
+          <div class="detail-header">
+            <button class="back-btn" @click="goBack" aria-label="Go back">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 18l-6-6 6-6"></path>
+              </svg>
+            </button>
+            <span class="detail-title">Price Chart</span>
+          </div>
+
+          <div class="container">
+            <div class="card" style="margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                <span style="font-size: 13px; color: var(--color-text-secondary); font-weight: 600;">AGV · 30D</span>
+                <span style="font-size: 22px; font-weight: 700;">{{ lastPrice }}</span>
+              </div>
+              <div style="font-size: 13px; font-weight: 600; margin-top: 4px;"
+                   :style="{ color: change >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }">
+                {{ change >= 0 ? '+' : '' }}{{ change.toFixed(2) }}%
+              </div>
+            </div>
+
+            <svg class="kline-svg" :viewBox="'0 0 ' + W + ' ' + H" preserveAspectRatio="xMidYMid meet">
+              <g>
+                <line v-for="t in yTicks" :key="'g' + t.v"
+                      :x1="PAD_L" :x2="W - PAD_R" :y1="t.y" :y2="t.y"
+                      stroke="var(--color-border)" stroke-width="1" />
+                <text v-for="t in yTicks" :key="'l' + t.v"
+                      :x="PAD_L - 6" :y="t.y + 4" text-anchor="end"
+                      font-size="10" fill="var(--color-text-secondary)">{{ t.label }}</text>
+              </g>
+              <polyline :points="linePoints" fill="none" stroke="var(--color-primary)"
+                        stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+            </svg>
+          </div>
+        </div>
+      `,
+      setup() {
+        const router = useRouter();
+
+        // Built-in historical data (offline-first)
+        const prices = [102.4, 103.1, 101.8, 104.6, 105.2, 106.9, 105.5, 107.8,
+                        109.1, 108.4, 110.2, 111.6, 110.9, 112.4, 113.8, 112.1,
+                        114.5, 115.2, 116.8, 115.9, 117.4, 118.9, 118.2, 119.6,
+                        121.1, 120.4, 122.2, 123.6, 122.9, 124.5];
+
+        const W = 340;
+        const H = 200;
+        const PAD_L = 44;
+        const PAD_R = 12;
+        const PAD_T = 16;
+        const PAD_B = 20;
+
+        const minV = Math.min(...prices);
+        const maxV = Math.max(...prices);
+        const padV = (maxV - minV) * 0.1 || 1;
+        const yMin = minV - padV;
+        const yMax = maxV + padV;
+
+        const toY = (v) => {
+          const ratio = (v - yMin) / (yMax - yMin);
+          return PAD_T + (H - PAD_T - PAD_B) * (1 - ratio);
+        };
+
+        const toX = (i) => {
+          const innerW = W - PAD_L - PAD_R;
+          return PAD_L + (innerW / (prices.length - 1)) * i;
+        };
+
+        const linePoints = prices
+          .map((p, i) => `${toX(i).toFixed(1)},${toY(p).toFixed(1)}`)
+          .join(' ');
+
+        const yTicks = [];
+        const tickCount = 4;
+        for (let i = 0; i <= tickCount; i++) {
+          const v = yMin + ((yMax - yMin) / tickCount) * i;
+          yTicks.push({ v, y: toY(v), label: v.toFixed(0) });
+        }
+
+        const lastPrice = prices[prices.length - 1].toFixed(2);
+        const change = ((prices[prices.length - 1] - prices[0]) / prices[0]) * 100;
+
+        const goBack = () => router.back();
+
+        return { W, H, PAD_L, PAD_R, linePoints, yTicks, lastPrice, change, goBack };
+      }
+    };
+
+    /* ============================================================
+       TOP GAINERS (sub-page)
+       ============================================================ */
+    const TopGainersPage = {
+      template: /* html */ `
+        <div>
+          <div class="detail-header">
+            <button class="back-btn" @click="goBack" aria-label="Go back">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 18l-6-6 6-6"></path>
+              </svg>
+            </button>
+            <span class="detail-title">Top Gainers</span>
+          </div>
+
+          <div class="container">
+            <div class="card">
+              <div v-for="(row, idx) in rows" :key="row.symbol"
+                   style="display: flex; justify-content: space-between; align-items: center; min-height: 48px; border-bottom: 1px solid var(--color-border);"
+                   :style="idx === rows.length - 1 ? 'border-bottom: none;' : ''">
+                <div>
+                  <div style="font-weight: 700; font-size: 15px;">{{ row.symbol }}</div>
+                  <div style="font-size: 12px; color: var(--color-text-secondary);">{{ row.name }}</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-weight: 600;">{{ row.price }}</div>
+                  <div style="font-size: 13px; font-weight: 700; color: var(--color-success);">+{{ row.change }}%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        const router = useRouter();
+        const rows = [
+          { symbol: 'NVDA', name: 'NVIDIA Corp.', price: '$124.58', change: '3.42' },
+          { symbol: 'TSLA', name: 'Tesla Inc.', price: '$248.90', change: '2.87' },
+          { symbol: 'AMD', name: 'Advanced Micro Devices', price: '$176.34', change: '2.15' },
+          { symbol: 'AAPL', name: 'Apple Inc.', price: '$226.05', change: '1.64' },
+          { symbol: 'MSFT', name: 'Microsoft Corp.', price: '$421.77', change: '1.21' }
+        ];
+        const goBack = () => router.back();
+        return { rows, goBack };
+      }
+    };
+
+    /* ============================================================
+       WATCHLIST (sub-page)
+       ============================================================ */
+    const WatchlistPage = {
+      template: /* html */ `
+        <div>
+          <div class="detail-header">
+            <button class="back-btn" @click="goBack" aria-label="Go back">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 18l-6-6 6-6"></path>
+              </svg>
+            </button>
+            <span class="detail-title">Watchlist</span>
+          </div>
+
+          <div class="container">
+            <div class="card">
+              <div v-for="(item, idx) in items" :key="item.symbol"
+                   style="display: flex; justify-content: space-between; align-items: center; min-height: 48px; border-bottom: 1px solid var(--color-border);"
+                   :style="idx === items.length - 1 ? 'border-bottom: none;' : ''">
+                <span style="font-weight: 700; font-size: 15px;">{{ item.symbol }}</span>
+                <span style="font-weight: 600;">{{ item.price }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        const router = useRouter();
+        const items = [
+          { symbol: 'NVDA', price: '$124.58' },
+          { symbol: 'TSLA', price: '$248.90' },
+          { symbol: 'BTC', price: '$67,420' },
+          { symbol: 'ETH', price: '$3,512' }
+        ];
+        const goBack = () => router.back();
+        return { items, goBack };
+      }
+    };
+
+    /* ============================================================
+       PRIVACY PAGE (sub-page)
+       ============================================================ */
+    const PrivacyPage = {
+      template: /* html */ `
+        <div>
+          <div class="detail-header">
+            <button class="back-btn" @click="goBack" aria-label="Go back">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 18l-6-6 6-6"></path>
+              </svg>
+            </button>
+            <span class="detail-title">Privacy Policy</span>
+          </div>
+          <div class="container">
+            <div class="card">
+              <h2 style="margin-top: 0; font-size: 17px;">Data Collection</h2>
+              <p style="font-size: 14px; line-height: 1.6; color: var(--color-text-secondary);">
+                {{ appName }} computes an anonymous canvas fingerprint locally on your device
+                to support essential integrity checks. This value is not used for advertising
+                and is never sold to third parties.
+              </p>
+              <h2 style="font-size: 17px;">Local Storage</h2>
+              <p style="font-size: 14px; line-height: 1.6; color: var(--color-text-secondary);">
+                Application data is processed on-device. No personal account information is
+                required to use this application.
+              </p>
+              <h2 style="font-size: 17px;">Contact</h2>
+              <p style="font-size: 14px; line-height: 1.6; color: var(--color-text-secondary);">
+                For privacy questions, email
+                <a :href="'mailto:' + email" style="color: var(--color-primary);">{{ email }}</a>.
+              </p>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        const router = useRouter();
+        const goBack = () => router.back();
+        return { appName: APP_NAME, email: CONTACT_EMAIL, goBack };
+      }
+    };
+
+    /* ============================================================
+       TERMS PAGE (sub-page)
+       ============================================================ */
+    const TermsPage = {
+      template: /* html */ `
+        <div>
+          <div class="detail-header">
+            <button class="back-btn" @click="goBack" aria-label="Go back">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 18l-6-6 6-6"></path>
+              </svg>
+            </button>
+            <span class="detail-title">Terms of Service</span>
+          </div>
+          <div class="container">
+            <div class="card">
+              <h2 style="margin-top: 0; font-size: 17px;">Acceptance</h2>
+              <p style="font-size: 14px; line-height: 1.6; color: var(--color-text-secondary);">
+                By using {{ appName }}, you agree to these terms. The application is provided
+                "as is" without warranties of any kind.
+              </p>
+              <h2 style="font-size: 17px;">Use of Content</h2>
+              <p style="font-size: 14px; line-height: 1.6; color: var(--color-text-secondary);">
+                Market data shown in the app is for informational purposes only and does not
+                constitute financial advice.
+              </p>
+              <h2 style="font-size: 17px;">Changes</h2>
+              <p style="font-size: 14px; line-height: 1.6; color: var(--color-text-secondary);">
+                We may update these terms from time to time. Continued use of the application
+                constitutes acceptance of the revised terms.
+              </p>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        const router = useRouter();
+        const goBack = () => router.back();
+        return { appName: APP_NAME, goBack };
+      }
+    };
+
+    /* ============================================================
+       ROUTER CONFIGURATION (hash mode required for file:// use)
+       ============================================================ */
     const routes = [
       { path: '/', redirect: '/loading' },
-      { path: '/loading', name: 'loading', component: LoadingPage, meta: { tab: false } },
-      { path: '/home', name: 'home', component: HomePage, meta: { tab: true } }
+      { path: '/loading', name: 'Loading', component: LoadingPage },
+      { path: '/home', name: 'Home', component: HomePage },
+      { path: '/toolbox', name: 'Toolbox', component: ToolboxPage },
+      { path: '/settings', name: 'Settings', component: SettingsPage },
+      // Sub-pages (no tab bar)
+      { path: '/tools/strength-checker', name: 'StrengthChecker', component: StrengthCheckerPage },
+      { path: '/tools/price-chart', name: 'PriceChart', component: PriceChartPage },
+      { path: '/tools/top-gainers', name: 'TopGainers', component: TopGainersPage },
+      { path: '/tools/watchlist', name: 'Watchlist', component: WatchlistPage },
+      { path: '/legal/privacy', name: 'Privacy', component: PrivacyPage },
+      { path: '/legal/terms', name: 'Terms', component: TermsPage }
     ];
 
     const router = createRouter({
@@ -617,68 +1139,65 @@
       routes
     });
 
-    // 暴露 router 供 Loading 页面导航使用
-    window.__router__ = router;
-
-    // ============================================================
-    // 根组件（含 Tab Bar）
-    // ============================================================
+    /* ============================================================
+       ROOT APP — layout, tab bar visibility, transition
+       ============================================================ */
     const App = {
-      name: 'App',
-      template: '#app-template',
+      template: /* html */ `
+        <div class="app-shell">
+          <div class="page-scroll" :class="{ 'no-tabs': !showTabBar }">
+            <router-view v-slot="{ Component }">
+              <transition name="fade" mode="out-in">
+                <component :is="Component" />
+              </transition>
+            </router-view>
+          </div>
+
+          <nav v-if="showTabBar" class="tab-bar" aria-label="Main navigation">
+            <router-link class="tab-item" :to="{ name: 'Home' }" exact-active-class="active">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                   stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 10.5L12 3l9 7.5"></path>
+                <path d="M5 9.5V21h14V9.5"></path>
+              </svg>
+              <span>Home</span>
+            </router-link>
+
+            <router-link class="tab-item" :to="{ name: 'Toolbox' }" exact-active-class="active">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                   stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="7" width="18" height="13" rx="2"></rect>
+                <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <path d="M3 12h18"></path>
+              </svg>
+              <span>Toolbox</span>
+            </router-link>
+
+            <router-link class="tab-item" :to="{ name: 'Settings' }" exact-active-class="active">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                   stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"></path>
+              </svg>
+              <span>Settings</span>
+            </router-link>
+          </nav>
+        </div>
+      `,
       setup() {
-        const route = Vue.useRoute ? Vue.useRoute() : null;
-
-        // 使用 router.currentRoute 响应式
-        const currentRoute = router.currentRoute;
-
-        const showTab = computed(() => {
-          const meta = currentRoute.value.meta || {};
-          return meta.tab !== false;
-        });
-
-        function isActive(path) {
-          return currentRoute.value.path === path;
-        }
-
-        return { showTab, isActive };
+        const route = useRoute();
+        const mainTabNames = new Set(['Home', 'Toolbox', 'Settings']);
+        const showTabBar = computed(() => mainTabNames.has(route.name));
+        return { showTabBar };
       }
     };
 
-    // ============================================================
-    // 创建并挂载应用
-    // ============================================================
+    /* ============================================================
+       MOUNT
+       ============================================================ */
     const app = createApp(App);
     app.use(router);
     app.mount('#app');
-
-    // ============================================================
-    // 全局保存设备指纹（Loading 页计算后供 Home 页读取）
-    // 注意：LoadingPage setup 中同步计算了 device，但为了跨组件共享，
-    // 这里在应用挂载后异步补算一次并存入全局（与 Loading 页逻辑一致）。
-    // 实际上 LoadingPage 内的 device 计算已足够，但 Home 页需要读取，
-    // 因此我们在应用初始化时统一计算并存入 window.__deviceFingerprint__。
-    // ============================================================
-    (function initDeviceFingerprint() {
-      try {
-        let canvas = document.createElement("canvas");
-        let ctx = canvas.getContext("2d");
-        let txt = "BrowserLeaks,com <canvas> 1.0";
-        ctx.textBaseline = "top";
-        ctx.font = "14px 'Arial'";
-        ctx.textBaseline = "alphabetic";
-        ctx.fillStyle = "#f60";
-        ctx.fillRect(125,1,62,20);
-        ctx.fillStyle = "#069";
-        ctx.fillText(txt, 2, 15);
-        ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
-        ctx.fillText(txt, 4, 17);
-        window.__deviceFingerprint__ = md5(canvas.toDataURL().replace("data:image/png;base64,", ""));
-      } catch (e) {
-        window.__deviceFingerprint__ = '';
-      }
-    })();
-
   </script>
 </body>
 </html>
